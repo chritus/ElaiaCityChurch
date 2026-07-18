@@ -686,6 +686,7 @@ body.exporting .ps-footer{
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="assets/logo-data.js"></script>
 <script>
 const ghs = n => 'GHS ' + Number(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num = n => Number(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -790,7 +791,23 @@ function waitForLogo(){
   });
 }
 
+function dataUrlToUint8Array(dataUrl){
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function getLogoBytes(){
+  if (window.ECC_LOGO_DATA_URL) return dataUrlToUint8Array(window.ECC_LOGO_DATA_URL);
+  const res = await fetch('assets/logo.png');
+  if (!res.ok) throw new Error('Logo fetch failed');
+  return new Uint8Array(await res.arrayBuffer());
+}
+
 async function getLogoDataUrl(){
+  if (window.ECC_LOGO_DATA_URL) return window.ECC_LOGO_DATA_URL;
   const res = await fetch('assets/logo.png');
   const blob = await res.blob();
   return new Promise((resolve, reject) => {
@@ -850,102 +867,184 @@ async function downloadWord(){
   fillPayslip(d);
   setBusy(true);
   try {
-    let logoSrc = 'assets/logo.png';
-    try { logoSrc = await getLogoDataUrl(); } catch (_) {}
+    const {
+      Document, Packer, Paragraph, TextRun, ImageRun, Table, TableRow, TableCell,
+      WidthType, AlignmentType, BorderStyle, ShadingType, VerticalAlign
+    } = await import('https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm');
 
-    const html = `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta charset="utf-8"/>
-<title>Salary Advice — ${d.name}</title>
-<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
-<style>
-  @page { size: A4; margin: 18mm 16mm 20mm; }
-  body { font-family: Arial, Helvetica, sans-serif; color: #333; font-size: 12px; }
-  .header { width: 100%; margin-bottom: 12px; }
-  .header td { vertical-align: top; }
-  .logo { height: 52px; }
-  .contact { text-align: right; color: #5F6B4E; font-size: 11px; line-height: 1.5; }
-  .rule { border: none; border-top: 1.5px solid #cfd6c5; margin: 10px 0 18px; }
-  .title { text-align: center; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 18px; color: #111; }
-  .sh { font-size: 13px; font-weight: 700; color: #111; margin: 0 0 6px; }
-  .line { border: none; border-bottom: 1.5px solid #ddd; margin: 0 0 12px; }
-  .info { width: 100%; margin-bottom: 18px; }
-  .info td { width: 50%; padding: 3px 8px 3px 0; font-size: 12px; }
-  .lbl { font-weight: 700; color: #111; }
-  table.pay { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.pay th { background: #5F6B4E; color: #fff; text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; }
-  table.pay td { border-bottom: 1px solid #e8e8e8; padding: 10px 12px; font-size: 12px; }
-  .totals { width: 300px; margin-left: auto; margin-top: 18px; }
-  .totals td { padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #eee; }
-  .net td { background: #eef1ea; border-top: 2.5px solid #5F6B4E; font-weight: 700; }
-  .footer { margin-top: 40px; height: 14px; background: #5F6B4E; }
-</style>
-</head>
-<body>
-  <table class="header" cellpadding="0" cellspacing="0">
-    <tr>
-      <td><img class="logo" src="${logoSrc}" alt="Elaia City Church"/></td>
-      <td class="contact">
-        ${CONTACT.phone}<br/>
-        ${CONTACT.email}<br/>
-        ${CONTACT.address.join('<br/>')}
-      </td>
-    </tr>
-  </table>
-  <hr class="rule"/>
-  <div class="title">Salary Advice</div>
+    const logoBytes = await getLogoBytes();
+    const olive = '5F6B4E';
+    const soft = 'EEF1EA';
+    const noBorder = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+    const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+    const thinBorder = { style: BorderStyle.SINGLE, size: 4, color: 'E8E8E8' };
+    const cellBorders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
 
-  <div class="sh">Employee Information</div>
-  <hr class="line"/>
-  <table class="info" cellpadding="0" cellspacing="0">
-    <tr>
-      <td><span class="lbl">Employee Name:</span> ${d.name}</td>
-      <td><span class="lbl">Position:</span> ${d.position}</td>
-    </tr>
-    <tr>
-      <td><span class="lbl">SSNIT ID:</span> ${d.ssnit}</td>
-      <td><span class="lbl">Pay Period:</span> ${d.period}</td>
-    </tr>
-    <tr>
-      <td><span class="lbl">Payment Date:</span> ${d.paydate}</td>
-      <td></td>
-    </tr>
-  </table>
+    const label = (t) => new TextRun({ text: t, bold: true, font: 'Arial', size: 22, color: '111111' });
+    const value = (t) => new TextRun({ text: ' ' + t, font: 'Arial', size: 22, color: '333333' });
+    const cell = (children, opts = {}) => new TableCell({
+      borders: opts.borders || noBorders,
+      width: { size: opts.width || 4500, type: WidthType.DXA },
+      shading: opts.shading ? { type: ShadingType.CLEAR, fill: opts.shading } : undefined,
+      verticalAlign: VerticalAlign.CENTER,
+      children: Array.isArray(children[0]) ? children : [new Paragraph({ children })]
+    });
 
-  <div class="sh">Earnings &amp; Deductions</div>
-  <hr class="line"/>
-  <table class="pay">
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th>Earnings (GHS)</th>
-        <th>Deductions (GHS)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>Basic Salary</td><td>${num(d.basic)}</td><td>-</td></tr>
-      <tr><td>Mission Travel Allowance</td><td>${num(d.mission)}</td><td>-</td></tr>
-      <tr><td>Fuel Allowance</td><td>${num(d.fuel)}</td><td>-</td></tr>
-      <tr><td>SSNIT</td><td>-</td><td>${num(d.ssnitded)}</td></tr>
-      <tr><td>Tax</td><td>-</td><td>${num(d.tax)}</td></tr>
-    </tbody>
-  </table>
+    const payRow = (desc, earn, ded, header = false) => new TableRow({
+      children: [
+        cell([new TextRun({ text: desc, bold: header, font: 'Arial', size: 20, color: header ? 'FFFFFF' : '333333' })], {
+          width: 4000, borders: cellBorders, shading: header ? olive : undefined
+        }),
+        cell([new TextRun({ text: earn, bold: header, font: 'Arial', size: 20, color: header ? 'FFFFFF' : '333333' })], {
+          width: 2500, borders: cellBorders, shading: header ? olive : undefined
+        }),
+        cell([new TextRun({ text: ded, bold: header, font: 'Arial', size: 20, color: header ? 'FFFFFF' : '333333' })], {
+          width: 2500, borders: cellBorders, shading: header ? olive : undefined
+        })
+      ]
+    });
 
-  <table class="totals" cellpadding="0" cellspacing="0">
-    <tr><td>Total Earnings</td><td style="text-align:right;">${ghs(d.earnings)}</td></tr>
-    <tr><td>Total Deductions</td><td style="text-align:right;">${ghs(d.deductions)}</td></tr>
-    <tr class="net"><td>Net Pay</td><td style="text-align:right;">${ghs(d.net)}</td></tr>
-  </table>
+    const totalRow = (left, right, emphasize = false) => new TableRow({
+      children: [
+        cell([new TextRun({ text: left, bold: true, font: 'Arial', size: 22, color: '111111' })], {
+          width: 2800, borders: noBorders, shading: emphasize ? soft : undefined
+        }),
+        cell([new TextRun({ text: right, bold: true, font: 'Arial', size: 22, color: '111111' })], {
+          width: 2200, borders: noBorders, shading: emphasize ? soft : undefined
+        })
+      ]
+    });
 
-  <div class="footer"></div>
-</body>
-</html>`;
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            size: { width: 11906, height: 16838 },
+            margin: { top: 720, right: 720, bottom: 720, left: 720 }
+          }
+        },
+        children: [
+          new Table({
+            width: { size: 10466, type: WidthType.DXA },
+            columnWidths: [6200, 4266],
+            rows: [
+              new TableRow({
+                children: [
+                  cell([
+                    new Paragraph({
+                      children: [
+                        new ImageRun({
+                          data: logoBytes,
+                          transformation: { width: 180, height: 64 }
+                        })
+                      ]
+                    })
+                  ], { width: 6200 }),
+                  new TableCell({
+                    borders: noBorders,
+                    width: { size: 4266, type: WidthType.DXA },
+                    children: [
+                      new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: CONTACT.phone, font: 'Arial', size: 18, color: olive })] }),
+                      new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: CONTACT.email, font: 'Arial', size: 18, color: olive })] }),
+                      new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: CONTACT.address[0], font: 'Arial', size: 18, color: olive })] }),
+                      new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: CONTACT.address[1], font: 'Arial', size: 18, color: olive })] }),
+                      new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: CONTACT.address[2], font: 'Arial', size: 18, color: olive })] })
+                    ]
+                  })
+                ]
+              })
+            ]
+          }),
+          new Paragraph({
+            spacing: { before: 120, after: 200 },
+            border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: 'CFD6C5', space: 8 } },
+            children: []
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 280 },
+            children: [new TextRun({ text: 'SALARY ADVICE', bold: true, font: 'Arial', size: 36, color: '111111' })]
+          }),
+          new Paragraph({
+            spacing: { after: 60 },
+            children: [new TextRun({ text: 'Employee Information', bold: true, font: 'Arial', size: 24, color: '111111' })]
+          }),
+          new Paragraph({
+            border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: 'DDDDDD', space: 4 } },
+            spacing: { after: 160 },
+            children: []
+          }),
+          new Table({
+            width: { size: 10466, type: WidthType.DXA },
+            columnWidths: [5233, 5233],
+            rows: [
+              new TableRow({ children: [
+                cell([label('Employee Name:'), value(d.name)], { width: 5233 }),
+                cell([label('Position:'), value(d.position)], { width: 5233 })
+              ]}),
+              new TableRow({ children: [
+                cell([label('SSNIT ID:'), value(d.ssnit)], { width: 5233 }),
+                cell([label('Pay Period:'), value(d.period)], { width: 5233 })
+              ]}),
+              new TableRow({ children: [
+                cell([label('Payment Date:'), value(d.paydate)], { width: 5233 }),
+                cell([new TextRun({ text: '' })], { width: 5233 })
+              ]})
+            ]
+          }),
+          new Paragraph({ spacing: { before: 280, after: 60 }, children: [
+            new TextRun({ text: 'Earnings & Deductions', bold: true, font: 'Arial', size: 24, color: '111111' })
+          ]}),
+          new Paragraph({
+            border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: 'DDDDDD', space: 4 } },
+            spacing: { after: 120 },
+            children: []
+          }),
+          new Table({
+            width: { size: 9000, type: WidthType.DXA },
+            columnWidths: [4000, 2500, 2500],
+            rows: [
+              payRow('Description', 'Earnings (GHS)', 'Deductions (GHS)', true),
+              payRow('Basic Salary', num(d.basic), '-'),
+              payRow('Mission Travel Allowance', num(d.mission), '-'),
+              payRow('Fuel Allowance', num(d.fuel), '-'),
+              payRow('SSNIT', '-', num(d.ssnitded)),
+              payRow('Tax', '-', num(d.tax))
+            ]
+          }),
+          new Paragraph({ spacing: { before: 200 }, children: [] }),
+          new Table({
+            width: { size: 5000, type: WidthType.DXA },
+            columnWidths: [2800, 2200],
+            rows: [
+              totalRow('Total Earnings', ghs(d.earnings)),
+              totalRow('Total Deductions', ghs(d.deductions)),
+              totalRow('Net Pay', ghs(d.net), true)
+            ]
+          }),
+          new Paragraph({ spacing: { before: 400 }, children: [] }),
+          new Table({
+            width: { size: 10466, type: WidthType.DXA },
+            columnWidths: [10466],
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    borders: noBorders,
+                    width: { size: 10466, type: WidthType.DXA },
+                    shading: { type: ShadingType.CLEAR, fill: olive },
+                    children: [new Paragraph({ children: [new TextRun({ text: ' ', size: 16 })] })]
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      }]
+    });
 
-    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
-    triggerDownload(blob, `Salary-Advice-${safeFilename(d.name)}.doc`);
+    const blob = await Packer.toBlob(doc);
+    triggerDownload(blob, `Salary-Advice-${safeFilename(d.name)}.docx`);
   } catch (err) {
     console.error(err);
     alert('Could not generate the Word file. Please try again.');
