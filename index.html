@@ -182,26 +182,39 @@ body{
   font-size:22px;
 }
 .submit-wrap{padding:0 28px 28px;}
+.download-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 .btn-generate{
   width:100%;
-  padding:15px;
+  padding:15px 12px;
   background:var(--olive);
   color:#fff;
   border:none;
   border-radius:10px;
   font-family:'Outfit',sans-serif;
-  font-size:15px;
+  font-size:14px;
   font-weight:600;
   letter-spacing:.02em;
   cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:10px;
-  transition:background .2s,transform .12s;
+  gap:8px;
+  transition:background .2s,transform .12s,opacity .2s;
 }
+.btn-generate.secondary{
+  background:#fff;
+  color:var(--olive);
+  border:1.5px solid var(--olive);
+}
+.btn-generate.secondary:hover{background:var(--olive-soft);}
 .btn-generate:hover{background:var(--olive-deep);}
+.btn-generate.secondary:hover{background:var(--olive-soft);}
 .btn-generate:active{transform:scale(.98);}
+.btn-generate:disabled{opacity:.65;cursor:wait;transform:none;}
 .field.has-error input{border-color:var(--danger);}
 .error-msg{color:var(--danger);font-size:12px;margin-top:5px;display:none;}
 .field.has-error .error-msg{display:block;}
@@ -211,8 +224,133 @@ body{
   .form-body{grid-template-columns:1fr;}
   .totals-strip{grid-template-columns:1fr 1fr;}
   .total-item.net{grid-column:1/-1;}
+  .download-actions{grid-template-columns:1fr;}
 }
 #payslip-preview{display:none;}
+}
+
+/* Visible payslip layout used when capturing PDF */
+body.exporting .site-letterhead,
+body.exporting .card { display:none !important; }
+body.exporting #payslip-preview { display:block !important; }
+body.exporting {
+  background:#fff !important;
+  padding:0 !important;
+}
+body.exporting .ps {
+  width:210mm;
+  min-height:297mm;
+  margin:0 auto;
+  background:#fff;
+  padding:14mm 16mm 18mm;
+  display:flex;
+  flex-direction:column;
+  font-family:Arial, Helvetica, sans-serif;
+  color:#333;
+}
+body.exporting .ps-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:10px;
+}
+body.exporting .ps-logo{
+  height:52px;
+  width:auto;
+  max-width:260px;
+  object-fit:contain;
+  display:block;
+}
+body.exporting .ps-contact{
+  text-align:right;
+  font-size:11px;
+  line-height:1.5;
+  color:#5F6B4E;
+  font-weight:500;
+}
+body.exporting .ps-rule{
+  border:none;
+  border-top:1.5px solid #cfd6c5;
+  margin:0 0 18px;
+}
+body.exporting .ps-title{
+  font-size:26px;
+  font-weight:800;
+  color:#111;
+  letter-spacing:1px;
+  text-align:center;
+  text-transform:uppercase;
+  margin-bottom:18px;
+}
+body.exporting .ps-content{flex:1;}
+body.exporting .ps-sh{
+  font-size:13px;
+  font-weight:700;
+  color:#111;
+  margin-bottom:8px;
+}
+body.exporting .ps-line{
+  border:none;
+  border-bottom:1.5px solid #ddd;
+  margin-bottom:14px;
+}
+body.exporting .ps-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px 40px;
+  margin-bottom:22px;
+}
+body.exporting .ps-grid p{
+  font-size:12px;
+  color:#333;
+  line-height:1.7;
+}
+body.exporting .ps-grid p span.lbl{font-weight:700;color:#111;}
+body.exporting table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
+}
+body.exporting thead{background:#5F6B4E;}
+body.exporting thead th{
+  padding:10px 14px;
+  text-align:left;
+  font-size:11px;
+  font-weight:600;
+  color:#fff;
+  text-transform:uppercase;
+}
+body.exporting tbody td{
+  padding:10px 14px;
+  border-bottom:1px solid #e8e8e8;
+  font-size:12px;
+}
+body.exporting .ps-totals{
+  width:300px;
+  margin-left:auto;
+  margin-top:20px;
+}
+body.exporting .ps-trow{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 14px;
+  font-size:12px;
+  font-weight:600;
+  border-bottom:1px solid #eee;
+}
+body.exporting .ps-net{
+  background:#eef1ea;
+  border-top:2.5px solid #5F6B4E;
+}
+body.exporting .ps-footer{
+  margin-top:auto;
+  height:14px;
+  background:#5F6B4E;
+  margin-left:-16mm;
+  margin-right:-16mm;
+  margin-bottom:-18mm;
+  width:calc(100% + 32mm);
 }
 
 /* ── PRINT STYLES ─────────────────────────────────────────────────── */
@@ -384,7 +522,7 @@ body{
   <div class="site-letterhead-rule"></div>
   <div class="site-letterhead-body">
     <h1>Payslip Generator</h1>
-    <p>Elaia City Church — fill in the fields and generate a salary advice PDF</p>
+    <p>Elaia City Church — fill in the fields, then download as PDF or Word</p>
   </div>
   <div class="site-letterhead-foot"></div>
 </header>
@@ -472,13 +610,20 @@ body{
   </div>
 
   <div class="submit-wrap">
-    <button class="btn-generate" onclick="printPayslip()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-        <rect x="6" y="14" width="12" height="8"/>
-      </svg>
-      Generate &amp; Print / Save as PDF
-    </button>
+    <div class="download-actions">
+      <button type="button" class="btn-generate" id="btn-pdf" onclick="downloadPDF()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
+        </svg>
+        Download PDF
+      </button>
+      <button type="button" class="btn-generate secondary" id="btn-word" onclick="downloadWord()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/>
+        </svg>
+        Download Word
+      </button>
+    </div>
   </div>
 </div>
 
@@ -540,9 +685,15 @@ body{
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 const ghs = n => 'GHS ' + Number(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num = n => Number(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const CONTACT = {
+  phone: '050 498 0488',
+  email: 'elaiacitychurch@outlook.com',
+  address: ['P.O. BOX SK 1067', 'Sakumono Estates', 'Tema']
+};
 
 function recalc(){
   const basic   = parseFloat(document.getElementById('basic').value)||0;
@@ -584,38 +735,223 @@ function validate(){
   return ok;
 }
 
-function printPayslip(){
-  if(!validate()) return;
-
+function collectData(){
   const basic   = parseFloat(document.getElementById('basic').value)||0;
   const mission = parseFloat(document.getElementById('mission').value)||0;
   const fuel    = parseFloat(document.getElementById('fuel').value)||0;
   const ssnitded= parseFloat(document.getElementById('ssnitded').value)||0;
   const tax     = parseFloat(document.getElementById('tax').value)||0;
-  const earnings  = basic + mission + fuel;
-  const deductions= ssnitded + tax;
-  const net       = earnings - deductions;
+  const earnings = basic + mission + fuel;
+  const deductions = ssnitded + tax;
+  return {
+    name: document.getElementById('name').value.trim(),
+    position: document.getElementById('position').value.trim(),
+    ssnit: document.getElementById('ssnit').value.trim(),
+    period: fmtPeriod(document.getElementById('period').value),
+    paydate: fmtDate(document.getElementById('paydate').value),
+    basic, mission, fuel, ssnitded, tax,
+    earnings, deductions,
+    net: earnings - deductions
+  };
+}
 
-  document.getElementById('p-name').textContent     = document.getElementById('name').value;
-  document.getElementById('p-position').textContent = document.getElementById('position').value;
-  document.getElementById('p-ssnit').textContent    = document.getElementById('ssnit').value;
-  document.getElementById('p-period').textContent   = fmtPeriod(document.getElementById('period').value);
-  document.getElementById('p-paydate').textContent  = fmtDate(document.getElementById('paydate').value);
-  document.getElementById('p-basic').textContent    = num(basic);
-  document.getElementById('p-mission').textContent  = num(mission);
-  document.getElementById('p-fuel').textContent     = num(fuel);
-  document.getElementById('p-ssnitded').textContent = num(ssnitded);
-  document.getElementById('p-tax').textContent      = num(tax);
-  document.getElementById('p-earnings').textContent = ghs(earnings);
-  document.getElementById('p-deductions').textContent = ghs(deductions);
-  document.getElementById('p-net').textContent      = ghs(net);
+function fillPayslip(d){
+  document.getElementById('p-name').textContent     = d.name;
+  document.getElementById('p-position').textContent = d.position;
+  document.getElementById('p-ssnit').textContent    = d.ssnit;
+  document.getElementById('p-period').textContent   = d.period;
+  document.getElementById('p-paydate').textContent  = d.paydate;
+  document.getElementById('p-basic').textContent    = num(d.basic);
+  document.getElementById('p-mission').textContent  = num(d.mission);
+  document.getElementById('p-fuel').textContent     = num(d.fuel);
+  document.getElementById('p-ssnitded').textContent = num(d.ssnitded);
+  document.getElementById('p-tax').textContent      = num(d.tax);
+  document.getElementById('p-earnings').textContent = ghs(d.earnings);
+  document.getElementById('p-deductions').textContent = ghs(d.deductions);
+  document.getElementById('p-net').textContent      = ghs(d.net);
+}
 
+function safeFilename(name){
+  return (name || 'Employee').replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'-') || 'Employee';
+}
+
+function setBusy(busy){
+  document.getElementById('btn-pdf').disabled = busy;
+  document.getElementById('btn-word').disabled = busy;
+}
+
+function waitForLogo(){
   const logo = document.querySelector('.ps-logo');
-  if (logo && !logo.complete) {
-    logo.onload = () => window.print();
+  if (!logo || (logo.complete && logo.naturalWidth)) return Promise.resolve();
+  return new Promise(resolve => {
+    logo.onload = () => resolve();
+    logo.onerror = () => resolve();
+    setTimeout(resolve, 1500);
+  });
+}
+
+async function getLogoDataUrl(){
+  const res = await fetch('assets/logo.png');
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function triggerDownload(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 500);
+}
+
+async function downloadPDF(){
+  if (!validate()) return;
+  if (typeof html2pdf === 'undefined') {
+    alert('PDF library failed to load. Please check your connection and try again.');
     return;
   }
-  window.print();
+  const d = collectData();
+  fillPayslip(d);
+  setBusy(true);
+  document.body.classList.add('exporting');
+  try {
+    await waitForLogo();
+    const el = document.querySelector('#payslip-preview .ps');
+    const filename = `Salary-Advice-${safeFilename(d.name)}.pdf`;
+    await html2pdf().set({
+      margin: 0,
+      filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all'] }
+    }).from(el).save();
+  } catch (err) {
+    console.error(err);
+    alert('Could not generate the PDF. Please try again.');
+  } finally {
+    document.body.classList.remove('exporting');
+    setBusy(false);
+  }
+}
+
+async function downloadWord(){
+  if (!validate()) return;
+  const d = collectData();
+  fillPayslip(d);
+  setBusy(true);
+  try {
+    let logoSrc = 'assets/logo.png';
+    try { logoSrc = await getLogoDataUrl(); } catch (_) {}
+
+    const html = `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8"/>
+<title>Salary Advice — ${d.name}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #333; font-size: 12px; }
+  .header { width: 100%; margin-bottom: 12px; }
+  .header td { vertical-align: top; }
+  .logo { height: 52px; }
+  .contact { text-align: right; color: #5F6B4E; font-size: 11px; line-height: 1.5; }
+  .rule { border: none; border-top: 1.5px solid #cfd6c5; margin: 10px 0 18px; }
+  .title { text-align: center; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 18px; color: #111; }
+  .sh { font-size: 13px; font-weight: 700; color: #111; margin: 0 0 6px; }
+  .line { border: none; border-bottom: 1.5px solid #ddd; margin: 0 0 12px; }
+  .info { width: 100%; margin-bottom: 18px; }
+  .info td { width: 50%; padding: 3px 8px 3px 0; font-size: 12px; }
+  .lbl { font-weight: 700; color: #111; }
+  table.pay { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  table.pay th { background: #5F6B4E; color: #fff; text-align: left; padding: 10px 12px; font-size: 11px; text-transform: uppercase; }
+  table.pay td { border-bottom: 1px solid #e8e8e8; padding: 10px 12px; font-size: 12px; }
+  .totals { width: 300px; margin-left: auto; margin-top: 18px; }
+  .totals td { padding: 8px 12px; font-weight: 600; border-bottom: 1px solid #eee; }
+  .net td { background: #eef1ea; border-top: 2.5px solid #5F6B4E; font-weight: 700; }
+  .footer { margin-top: 40px; height: 14px; background: #5F6B4E; }
+</style>
+</head>
+<body>
+  <table class="header" cellpadding="0" cellspacing="0">
+    <tr>
+      <td><img class="logo" src="${logoSrc}" alt="Elaia City Church"/></td>
+      <td class="contact">
+        ${CONTACT.phone}<br/>
+        ${CONTACT.email}<br/>
+        ${CONTACT.address.join('<br/>')}
+      </td>
+    </tr>
+  </table>
+  <hr class="rule"/>
+  <div class="title">Salary Advice</div>
+
+  <div class="sh">Employee Information</div>
+  <hr class="line"/>
+  <table class="info" cellpadding="0" cellspacing="0">
+    <tr>
+      <td><span class="lbl">Employee Name:</span> ${d.name}</td>
+      <td><span class="lbl">Position:</span> ${d.position}</td>
+    </tr>
+    <tr>
+      <td><span class="lbl">SSNIT ID:</span> ${d.ssnit}</td>
+      <td><span class="lbl">Pay Period:</span> ${d.period}</td>
+    </tr>
+    <tr>
+      <td><span class="lbl">Payment Date:</span> ${d.paydate}</td>
+      <td></td>
+    </tr>
+  </table>
+
+  <div class="sh">Earnings &amp; Deductions</div>
+  <hr class="line"/>
+  <table class="pay">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Earnings (GHS)</th>
+        <th>Deductions (GHS)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Basic Salary</td><td>${num(d.basic)}</td><td>-</td></tr>
+      <tr><td>Mission Travel Allowance</td><td>${num(d.mission)}</td><td>-</td></tr>
+      <tr><td>Fuel Allowance</td><td>${num(d.fuel)}</td><td>-</td></tr>
+      <tr><td>SSNIT</td><td>-</td><td>${num(d.ssnitded)}</td></tr>
+      <tr><td>Tax</td><td>-</td><td>${num(d.tax)}</td></tr>
+    </tbody>
+  </table>
+
+  <table class="totals" cellpadding="0" cellspacing="0">
+    <tr><td>Total Earnings</td><td style="text-align:right;">${ghs(d.earnings)}</td></tr>
+    <tr><td>Total Deductions</td><td style="text-align:right;">${ghs(d.deductions)}</td></tr>
+    <tr class="net"><td>Net Pay</td><td style="text-align:right;">${ghs(d.net)}</td></tr>
+  </table>
+
+  <div class="footer"></div>
+</body>
+</html>`;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    triggerDownload(blob, `Salary-Advice-${safeFilename(d.name)}.doc`);
+  } catch (err) {
+    console.error(err);
+    alert('Could not generate the Word file. Please try again.');
+  } finally {
+    setBusy(false);
+  }
 }
 </script>
 </body>
