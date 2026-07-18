@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Elaia City Church — Salary Advice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── SCREEN STYLES ────────────────────────────────────────────────── */
+@media screen {
+:root{
+  --ink:#0d0d0d;--paper:#f7f6f3;--card:#fff;
+  --accent:#6B7A5A;--accent-light:#eef1ea;
+  --border:#e2e0db;--muted:#888;--danger:#c0392b;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--paper);font-family:'DM Sans',sans-serif;color:var(--ink);min-height:100vh;padding:40px 20px 60px;}
+.banner{max-width:720px;margin:0 auto 36px;display:flex;align-items:center;gap:16px;}
+.banner img{height:56px;width:auto;object-fit:contain;border-radius:10px;border:1px solid var(--border);padding:6px 10px;background:#fff;}
+.banner-text h1{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.3px;line-height:1.2;}
+.banner-text p{font-size:13px;color:var(--muted);margin-top:2px;}
+.card{max-width:720px;margin:0 auto;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
+.section-head{padding:18px 28px 0;display:flex;align-items:center;gap:10px;}
+.section-head .dot{width:8px;height:8px;background:var(--accent);border-radius:50%;flex-shrink:0;}
+.section-head h2{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.form-body{padding:16px 28px 28px;display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;}
+.full{grid-column:1/-1;}
+.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.field input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);background:var(--paper);transition:border-color .18s,box-shadow .18s;outline:none;}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(107,122,90,.15);background:#fff;}
+.divider{height:1px;background:var(--border);margin:4px 28px;}
+.totals-strip{margin:0 28px 28px;background:var(--accent-light);border:1.5px solid #cfd6c5;border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.total-item label{font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;}
+.total-item .val{font-size:18px;font-weight:600;color:var(--accent);}
+.total-item.net .val{font-family:'DM Serif Display',serif;font-size:22px;}
+.submit-wrap{padding:0 28px 28px;}
+.btn-generate{width:100%;padding:15px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;letter-spacing:.02em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s,transform .12s;}
+.btn-generate:hover{background:#556348;}
+.btn-generate:active{transform:scale(.98);}
+.field.has-error input{border-color:var(--danger);}
+.error-msg{color:var(--danger);font-size:12px;margin-top:5px;display:none;}
+.field.has-error .error-msg{display:block;}
+@media(max-width:560px){.form-body{grid-template-columns:1fr;}.totals-strip{grid-template-columns:1fr 1fr;}.total-item.net{grid-column:1/-1;}}
+#payslip-preview{display:none;}
+}
+
+/* ── PRINT STYLES ─────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#fff; font-family: Arial, Helvetica, sans-serif; color:#333; }
+
+  .banner, .card { display:none !important; }
+  #payslip-preview { display:block !important; }
+
+  .ps {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: #fff url('assets/letterhead.jpeg') no-repeat center top;
+    background-size: 210mm 297mm;
+    padding: 42mm 18mm 28mm;
+    position: relative;
+  }
+
+  .ps-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111;
+    letter-spacing: 1px;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+
+  .ps-sh {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 8px;
+    margin-top: 4px;
+  }
+  .ps-line {
+    border: none;
+    border-bottom: 1.5px solid #ddd;
+    margin-bottom: 14px;
+  }
+
+  .ps-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 40px;
+    margin-bottom: 24px;
+  }
+  .ps-grid p {
+    font-size: 12px;
+    color: #333;
+    line-height: 1.7;
+  }
+  .ps-grid p span.lbl {
+    font-weight: 700;
+    color: #111;
+  }
+  .ps-grid p span.val {
+    font-weight: 400;
+    color: #333;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    margin-bottom: 6px;
+  }
+  thead {
+    background: #6B7A5A;
+  }
+  thead th {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e8e8e8;
+    font-size: 12px;
+    color: #333;
+  }
+  tbody tr:last-child td {
+    border-bottom: 1px solid #ddd;
+  }
+
+  .ps-totals {
+    width: 300px;
+    margin-left: auto;
+    margin-top: 20px;
+  }
+  .ps-trow {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #eee;
+  }
+  .ps-trow:last-child {
+    border-bottom: none;
+  }
+  .ps-net {
+    background: #eef1ea;
+    border-top: 2.5px solid #6B7A5A;
+    border-bottom: none;
+    margin-top: 2px;
+  }
+  .ps-net div {
+    color: #111 !important;
+    font-weight: 700;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ── SCREEN: INPUT FORM ──────────────────────────────────────────── -->
+<div class="banner">
+  <img src="assets/logo.png" alt="Elaia City Church Logo" onerror="this.style.display='none'"/>
+  <div class="banner-text">
+    <h1>Payslip Generator</h1>
+    <p>Elaia City Church &mdash; fill in the fields and click Generate to download</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-head"><div class="dot"></div><h2>Employee Information</h2></div>
+  <div class="form-body">
+    <div class="field full" id="f-name">
+      <label>Full Name</label>
+      <input type="text" id="name" placeholder="e.g. Kimberly F. Arhin"/>
+      <div class="error-msg">Please enter the employee's name.</div>
+    </div>
+    <div class="field" id="f-position">
+      <label>Position / Job Title</label>
+      <input type="text" id="position" placeholder="e.g. Ministry Staff"/>
+      <div class="error-msg">Please enter a position.</div>
+    </div>
+    <div class="field" id="f-ssnit">
+      <label>SSNIT ID</label>
+      <input type="text" id="ssnit" placeholder="e.g. C039007150100"/>
+      <div class="error-msg">Please enter the SSNIT ID.</div>
+    </div>
+    <div class="field" id="f-period">
+      <label>Pay Period</label>
+      <input type="month" id="period"/>
+      <div class="error-msg">Please select a pay period.</div>
+    </div>
+    <div class="field" id="f-paydate">
+      <label>Payment Date</label>
+      <input type="date" id="paydate"/>
+      <div class="error-msg">Please select a payment date.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-head"><div class="dot"></div><h2>Earnings</h2></div>
+  <div class="form-body">
+    <div class="field" id="f-basic">
+      <label>Basic Salary (GHS)</label>
+      <input type="number" id="basic" placeholder="0.00" min="0" step="0.01"/>
+      <div class="error-msg">Please enter basic salary.</div>
+    </div>
+    <div class="field">
+      <label>Mission Travel Allowance (GHS)</label>
+      <input type="number" id="mission" placeholder="0.00" min="0" step="0.01" value="0"/>
+    </div>
+    <div class="field">
+      <label>Fuel Allowance (GHS)</label>
+      <input type="number" id="fuel" placeholder="0.00" min="0" step="0.01" value="0"/>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-head"><div class="dot"></div><h2>Deductions</h2></div>
+  <div class="form-body">
+    <div class="field" id="f-ssnitded">
+      <label>SSNIT Deduction (GHS)</label>
+      <input type="number" id="ssnitded" placeholder="0.00" min="0" step="0.01"/>
+      <div class="error-msg">Please enter SSNIT deduction.</div>
+    </div>
+    <div class="field" id="f-tax">
+      <label>Tax (GHS)</label>
+      <input type="number" id="tax" placeholder="0.00" min="0" step="0.01"/>
+      <div class="error-msg">Please enter tax amount.</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="totals-strip">
+    <div class="total-item">
+      <label>Total Earnings</label>
+      <div class="val" id="disp-earnings">GHS 0.00</div>
+    </div>
+    <div class="total-item">
+      <label>Total Deductions</label>
+      <div class="val" id="disp-deductions">GHS 0.00</div>
+    </div>
+    <div class="total-item net">
+      <label>Net Pay</label>
+      <div class="val" id="disp-net">GHS 0.00</div>
+    </div>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="btn-generate" onclick="printPayslip()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Generate &amp; Print / Save as PDF
+    </button>
+  </div>
+</div>
+
+<!-- ── PRINT: PAYSLIP PREVIEW (hidden on screen, shown on print) ───── -->
+<div id="payslip-preview">
+  <div class="ps">
+    <div class="ps-title">Salary Advice</div>
+
+    <div class="ps-content">
+      <div class="ps-sh">Employee Information</div>
+      <div class="ps-line"></div>
+      <div class="ps-grid">
+        <p><span class="lbl">Employee Name:</span> <span class="val" id="p-name"></span></p>
+        <p><span class="lbl">Position:</span> <span class="val" id="p-position"></span></p>
+        <p><span class="lbl">SSNIT ID:</span> <span class="val" id="p-ssnit"></span></p>
+        <p><span class="lbl">Pay Period:</span> <span class="val" id="p-period"></span></p>
+        <p><span class="lbl">Payment Date:</span> <span class="val" id="p-paydate"></span></p>
+      </div>
+
+      <div class="ps-sh">Earnings &amp; Deductions</div>
+      <div class="ps-line"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Earnings (GHS)</th>
+            <th>Deductions (GHS)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Basic Salary</td><td id="p-basic"></td><td>-</td></tr>
+          <tr><td>Mission Travel Allowance</td><td id="p-mission"></td><td>-</td></tr>
+          <tr><td>Fuel Allowance</td><td id="p-fuel"></td><td>-</td></tr>
+          <tr><td>SSNIT</td><td>-</td><td id="p-ssnitded"></td></tr>
+          <tr><td>Tax</td><td>-</td><td id="p-tax"></td></tr>
+        </tbody>
+      </table>
+
+      <div class="ps-totals">
+        <div class="ps-trow"><div>Total Earnings</div><div id="p-earnings"></div></div>
+        <div class="ps-trow"><div>Total Deductions</div><div id="p-deductions"></div></div>
+        <div class="ps-trow ps-net"><div>Net Pay</div><div id="p-net"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ghs = n => 'GHS ' + Number(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = n => Number(n).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function recalc(){
+  const basic   = parseFloat(document.getElementById('basic').value)||0;
+  const mission = parseFloat(document.getElementById('mission').value)||0;
+  const fuel    = parseFloat(document.getElementById('fuel').value)||0;
+  const ssnitded= parseFloat(document.getElementById('ssnitded').value)||0;
+  const tax     = parseFloat(document.getElementById('tax').value)||0;
+  document.getElementById('disp-earnings').textContent   = ghs(basic+mission+fuel);
+  document.getElementById('disp-deductions').textContent = ghs(ssnitded+tax);
+  document.getElementById('disp-net').textContent        = ghs(Math.max(0,basic+mission+fuel-ssnitded-tax));
+}
+['basic','mission','fuel','ssnitded','tax'].forEach(id=>document.getElementById(id).addEventListener('input',recalc));
+
+function fmtPeriod(v){
+  if(!v) return '';
+  const [y,m]=v.split('-');
+  return ['January','February','March','April','May','June','July','August','September','October','November','December'][+m-1]+' '+y;
+}
+function fmtDate(v){
+  if(!v) return '';
+  const [y,m,d]=v.split('-');
+  return d+'-'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]+'-'+y;
+}
+
+function validate(){
+  const checks=[
+    ['f-name','name'],['f-position','position'],['f-ssnit','ssnit'],
+    ['f-period','period'],['f-paydate','paydate'],['f-basic','basic'],
+    ['f-ssnitded','ssnitded'],['f-tax','tax']
+  ];
+  let ok=true;
+  checks.forEach(([fid,iid])=>{
+    const wrap=document.getElementById(fid);
+    if(!wrap) return;
+    const val=document.getElementById(iid).value.trim();
+    if(!val){ wrap.classList.add('has-error'); ok=false; }
+    else wrap.classList.remove('has-error');
+  });
+  return ok;
+}
+
+function printPayslip(){
+  if(!validate()) return;
+
+  const basic   = parseFloat(document.getElementById('basic').value)||0;
+  const mission = parseFloat(document.getElementById('mission').value)||0;
+  const fuel    = parseFloat(document.getElementById('fuel').value)||0;
+  const ssnitded= parseFloat(document.getElementById('ssnitded').value)||0;
+  const tax     = parseFloat(document.getElementById('tax').value)||0;
+  const earnings  = basic + mission + fuel;
+  const deductions= ssnitded + tax;
+  const net       = earnings - deductions;
+
+  document.getElementById('p-name').textContent     = document.getElementById('name').value;
+  document.getElementById('p-position').textContent = document.getElementById('position').value;
+  document.getElementById('p-ssnit').textContent    = document.getElementById('ssnit').value;
+  document.getElementById('p-period').textContent   = fmtPeriod(document.getElementById('period').value);
+  document.getElementById('p-paydate').textContent  = fmtDate(document.getElementById('paydate').value);
+  document.getElementById('p-basic').textContent    = num(basic);
+  document.getElementById('p-mission').textContent  = num(mission);
+  document.getElementById('p-fuel').textContent     = num(fuel);
+  document.getElementById('p-ssnitded').textContent = num(ssnitded);
+  document.getElementById('p-tax').textContent      = num(tax);
+  document.getElementById('p-earnings').textContent = ghs(earnings);
+  document.getElementById('p-deductions').textContent = ghs(deductions);
+  document.getElementById('p-net').textContent      = ghs(net);
+
+  window.print();
+}
+</script>
+</body>
+</html>
