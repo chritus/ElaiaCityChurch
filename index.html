@@ -871,42 +871,79 @@ function xmlEscape(str){
 }
 
 function buildDocxDocumentXml(d){
-  const infoRow = (l1, v1, l2, v2) => `
-    <w:tr>
-      <w:tc>
-        <w:tcPr><w:tcW w:w="4680" w:type="dxa"/></w:tcPr>
-        <w:p><w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${xmlEscape(l1)} </w:t></w:r><w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t>${xmlEscape(v1)}</w:t></w:r></w:p>
-      </w:tc>
-      <w:tc>
-        <w:tcPr><w:tcW w:w="4680" w:type="dxa"/></w:tcPr>
-        <w:p><w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${xmlEscape(l2)} </w:t></w:r><w:r><w:rPr><w:sz w:val="22"/></w:rPr><w:t>${xmlEscape(v2)}</w:t></w:r></w:p>
-      </w:tc>
-    </w:tr>`;
+  const olive = '5F6B4E';
+  const soft = 'EEF1EA';
+  const line = 'D9D9D9';
+  const font = '<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/>';
+  const cellPad = '<w:tcMar><w:top w:w="80" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>';
+  const border = (side, color = line, sz = '8') => `<w:${side} w:val="single" w:sz="${sz}" w:space="0" w:color="${color}"/>`;
+  const nilBorders = '<w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/>';
+  const rowBorders = `${border('top')}${border('left')}${border('bottom')}${border('right')}`;
+  const headerBorders = `${border('top', olive)}${border('left', olive)}${border('bottom', olive)}${border('right', olive)}`;
+  const clearTblBorders = '<w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/>';
 
-  const payRow = (desc, earn, ded, header) => {
-    const fill = header ? '<w:shd w:val="clear" w:color="auto" w:fill="5F6B4E"/>' : '';
-    const color = header ? '<w:color w:val="FFFFFF"/>' : '';
-    const bold = header ? '<w:b/>' : '';
-    return `
-    <w:tr>
-      <w:tc><w:tcPr><w:tcW w:w="3600" w:type="dxa"/>${fill}<w:tcBorders><w:bottom w:val="single" w:sz="4" w:color="E8E8E8"/></w:tcBorders></w:tcPr>
-        <w:p><w:r><w:rPr>${bold}${color}<w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(desc)}</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="2880" w:type="dxa"/>${fill}<w:tcBorders><w:bottom w:val="single" w:sz="4" w:color="E8E8E8"/></w:tcBorders></w:tcPr>
-        <w:p><w:r><w:rPr>${bold}${color}<w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(earn)}</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="2880" w:type="dxa"/>${fill}<w:tcBorders><w:bottom w:val="single" w:sz="4" w:color="E8E8E8"/></w:tcBorders></w:tcPr>
-        <w:p><w:r><w:rPr>${bold}${color}<w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(ded)}</w:t></w:r></w:p></w:tc>
+  const run = (text, opts = {}) => {
+    const {
+      bold = false, size = 20, color = '333333', space = false
+    } = opts;
+    return `<w:r><w:rPr>${font}${bold ? '<w:b/>' : ''}<w:color w:val="${color}"/><w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t${space ? ' xml:space="preserve"' : ''}>${xmlEscape(text)}</w:t></w:r>`;
+  };
+
+  const p = (runs, align = 'left', after = 0) =>
+    `<w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:before="0" w:after="${after}"/></w:pPr>${runs}</w:p>`;
+
+  const tc = (width, content, opts = {}) => {
+    const {
+      fill = '', borders = nilBorders, vAlign = 'center', align = 'left'
+    } = opts;
+    const shading = fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : '';
+    const inner = typeof content === 'string' && content.startsWith('<w:p')
+      ? content
+      : p(content, align);
+    return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:vAlign w:val="${vAlign}"/><w:tcBorders>${borders}</w:tcBorders>${shading}${cellPad}</w:tcPr>${inner}</w:tc>`;
+  };
+
+  const infoCell = (label, value, width) => {
+    if (!label && !value) {
+      return tc(width, p(run('', { size: 20 })), { borders: nilBorders });
+    }
+    return tc(width, p(
+      run(label + ' ', { bold: true, size: 20, color: '111111', space: true }) +
+      run(value, { size: 20, color: '333333' })
+    ), { borders: nilBorders });
+  };
+
+  const infoRow = (l1, v1, l2, v2) =>
+    `<w:tr>${infoCell(l1, v1, 4680)}${infoCell(l2, v2, 4680)}</w:tr>`;
+
+  const payRow = (desc, earn, ded, header = false, alt = false) => {
+    const fill = header ? olive : (alt ? soft : 'FFFFFF');
+    const borders = header ? headerBorders : rowBorders;
+    const textColor = header ? 'FFFFFF' : '333333';
+    const amountColor = header ? 'FFFFFF' : '222222';
+    return `<w:tr>
+      ${tc(4200, run(desc, { bold: header, size: header ? 18 : 20, color: textColor }), { fill, borders, align: 'left' })}
+      ${tc(2580, run(earn, { bold: header, size: header ? 18 : 20, color: amountColor }), { fill, borders, align: 'right' })}
+      ${tc(2580, run(ded, { bold: header, size: header ? 18 : 20, color: amountColor }), { fill, borders, align: 'right' })}
     </w:tr>`;
   };
 
-  const totalRow = (label, amount, emphasize) => `
-    <w:tr>
-      <w:tc><w:tcPr><w:tcW w:w="2880" w:type="dxa"/>${emphasize ? '<w:shd w:val="clear" w:color="auto" w:fill="EEF1EA"/>' : ''}</w:tcPr>
-        <w:p><w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t>${xmlEscape(label)}</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="2520" w:type="dxa"/>${emphasize ? '<w:shd w:val="clear" w:color="auto" w:fill="EEF1EA"/>' : ''}</w:tcPr>
-        <w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="22"/></w:rPr><w:t>${xmlEscape(amount)}</w:t></w:r></w:p></w:tc>
+  const totalRow = (label, amount, emphasize = false) => {
+    const fill = emphasize ? soft : 'FFFFFF';
+    const topColor = emphasize ? olive : line;
+    const topSz = emphasize ? '18' : '8';
+    const borders = `${border('top', topColor, topSz)}${border('left', line)}${border('bottom', line)}${border('right', line)}`;
+    return `<w:tr>
+      ${tc(3000, run(label, { bold: true, size: emphasize ? 22 : 20, color: emphasize ? olive : '111111' }), { fill, borders, align: 'left' })}
+      ${tc(2400, run(amount, { bold: true, size: emphasize ? 22 : 20, color: emphasize ? olive : '111111' }), { fill, borders, align: 'right' })}
     </w:tr>`;
+  };
 
-  // Logo display size in EMUs (English Metric Units): 180px x 64px at 96dpi
+  const sectionTitle = (text) =>
+    `<w:p><w:pPr><w:spacing w:before="280" w:after="60"/></w:pPr>${run(text, { bold: true, size: 24, color: '111111' })}</w:p>
+     <w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="${olive}"/></w:pBdr><w:spacing w:after="140"/></w:pPr></w:p>`;
+
+  // Logo display size in EMUs: 180px x 64px at 96dpi
   const logoCx = Math.round(180 * 9525);
   const logoCy = Math.round(64 * 9525);
 
@@ -919,10 +956,14 @@ function buildDocxDocumentXml(d){
   xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
     <w:tbl>
-      <w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+      <w:tblPr>
+        <w:tblW w:w="9360" w:type="dxa"/>
+        <w:tblBorders>${clearTblBorders}</w:tblBorders>
+      </w:tblPr>
+      <w:tblGrid><w:gridCol w:w="5400"/><w:gridCol w:w="3960"/></w:tblGrid>
       <w:tr>
         <w:tc>
-          <w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr>
+          <w:tcPr><w:tcW w:w="5400" w:type="dxa"/><w:vAlign w:val="center"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders></w:tcPr>
           <w:p>
             <w:r>
               <w:drawing>
@@ -956,57 +997,72 @@ function buildDocxDocumentXml(d){
           </w:p>
         </w:tc>
         <w:tc>
-          <w:tcPr><w:tcW w:w="3960" w:type="dxa"/></w:tcPr>
-          <w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:color w:val="5F6B4E"/><w:sz w:val="18"/></w:rPr><w:t>${xmlEscape(CONTACT.phone)}</w:t></w:r></w:p>
-          <w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:color w:val="5F6B4E"/><w:sz w:val="18"/></w:rPr><w:t>${xmlEscape(CONTACT.email)}</w:t></w:r></w:p>
-          <w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:color w:val="5F6B4E"/><w:sz w:val="18"/></w:rPr><w:t>${xmlEscape(CONTACT.address[0])}</w:t></w:r></w:p>
-          <w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:color w:val="5F6B4E"/><w:sz w:val="18"/></w:rPr><w:t>${xmlEscape(CONTACT.address[1])}</w:t></w:r></w:p>
-          <w:p><w:pPr><w:jc w:val="right"/></w:pPr><w:r><w:rPr><w:color w:val="5F6B4E"/><w:sz w:val="18"/></w:rPr><w:t>${xmlEscape(CONTACT.address[2])}</w:t></w:r></w:p>
+          <w:tcPr><w:tcW w:w="3960" w:type="dxa"/><w:vAlign w:val="center"/><w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders>${cellPad}</w:tcPr>
+          ${p(run(CONTACT.phone, { size: 18, color: olive }), 'right')}
+          ${p(run(CONTACT.email, { size: 18, color: olive }), 'right')}
+          ${p(run(CONTACT.address[0], { size: 18, color: olive }), 'right')}
+          ${p(run(CONTACT.address[1], { size: 18, color: olive }), 'right')}
+          ${p(run(CONTACT.address[2], { size: 18, color: olive }), 'right')}
         </w:tc>
       </w:tr>
     </w:tbl>
 
-    <w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="CFD6C5"/></w:pBdr><w:spacing w:after="200"/></w:pPr></w:p>
-    <w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="280"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="36"/></w:rPr><w:t>SALARY ADVICE</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="${olive}"/></w:pBdr><w:spacing w:before="80" w:after="240"/></w:pPr></w:p>
+    <w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="200"/></w:pPr>${run('SALARY ADVICE', { bold: true, size: 36, color: '111111' })}</w:p>
 
-    <w:p><w:r><w:rPr><w:b/><w:sz w:val="24"/></w:rPr><w:t>Employee Information</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="DDDDDD"/></w:pBdr><w:spacing w:after="120"/></w:pPr></w:p>
-
+    ${sectionTitle('Employee Information')}
     <w:tbl>
-      <w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+      <w:tblPr>
+        <w:tblW w:w="9360" w:type="dxa"/>
+        <w:tblBorders>${clearTblBorders}</w:tblBorders>
+      </w:tblPr>
+      <w:tblGrid><w:gridCol w:w="4680"/><w:gridCol w:w="4680"/></w:tblGrid>
       ${infoRow('Employee Name:', d.name, 'Position:', d.position)}
       ${infoRow('SSNIT ID:', d.ssnit, 'Pay Period:', d.period)}
       ${infoRow('Payment Date:', d.paydate, '', '')}
     </w:tbl>
 
-    <w:p><w:pPr><w:spacing w:before="280"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="24"/></w:rPr><w:t>Earnings &amp; Deductions</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="DDDDDD"/></w:pBdr><w:spacing w:after="120"/></w:pPr></w:p>
-
+    ${sectionTitle('Earnings & Deductions')}
     <w:tbl>
-      <w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+      <w:tblPr>
+        <w:tblW w:w="9360" w:type="dxa"/>
+        <w:tblBorders>${border('top', olive)}${border('left', line)}${border('bottom', line)}${border('right', line)}${border('insideH', line)}${border('insideV', line)}</w:tblBorders>
+        <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="0" w:lastColumn="0" w:noHBand="0" w:noVBand="0"/>
+      </w:tblPr>
+      <w:tblGrid><w:gridCol w:w="4200"/><w:gridCol w:w="2580"/><w:gridCol w:w="2580"/></w:tblGrid>
       ${payRow('Description', 'Earnings (GHS)', 'Deductions (GHS)', true)}
-      ${payRow('Basic Salary', num(d.basic), '-', false)}
-      ${payRow('Mission Travel Allowance', num(d.mission), '-', false)}
-      ${payRow('Fuel Allowance', num(d.fuel), '-', false)}
-      ${payRow('SSNIT', '-', num(d.ssnitded), false)}
-      ${payRow('Tax', '-', num(d.tax), false)}
+      ${payRow('Basic Salary', num(d.basic), '-', false, false)}
+      ${payRow('Mission Travel Allowance', num(d.mission), '-', false, true)}
+      ${payRow('Fuel Allowance', num(d.fuel), '-', false, false)}
+      ${payRow('SSNIT', '-', num(d.ssnitded), false, true)}
+      ${payRow('Tax', '-', num(d.tax), false, false)}
     </w:tbl>
 
-    <w:p><w:pPr><w:spacing w:before="200"/></w:pPr></w:p>
+    <w:p><w:pPr><w:spacing w:before="240" w:after="0"/></w:pPr></w:p>
     <w:tbl>
-      <w:tblPr><w:tblW w:w="5400" w:type="dxa"/><w:jc w:val="right"/></w:tblPr>
+      <w:tblPr>
+        <w:tblW w:w="5400" w:type="dxa"/>
+        <w:jc w:val="right"/>
+        <w:tblBorders>${border('top', line)}${border('left', line)}${border('bottom', line)}${border('right', line)}${border('insideH', line)}${border('insideV', line)}</w:tblBorders>
+      </w:tblPr>
+      <w:tblGrid><w:gridCol w:w="3000"/><w:gridCol w:w="2400"/></w:tblGrid>
       ${totalRow('Total Earnings', ghs(d.earnings), false)}
       ${totalRow('Total Deductions', ghs(d.deductions), false)}
       ${totalRow('Net Pay', ghs(d.net), true)}
     </w:tbl>
 
-    <w:p><w:pPr><w:spacing w:before="400"/></w:pPr></w:p>
+    <w:p><w:pPr><w:spacing w:before="360"/></w:pPr></w:p>
     <w:tbl>
-      <w:tblPr><w:tblW w:w="9360" w:type="dxa"/></w:tblPr>
+      <w:tblPr><w:tblW w:w="9360" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tblBorders></w:tblPr>
+      <w:tblGrid><w:gridCol w:w="9360"/></w:tblGrid>
       <w:tr>
         <w:tc>
-          <w:tcPr><w:tcW w:w="9360" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="5F6B4E"/><w:tcMar><w:top w:w="60" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/></w:tcMar></w:tcPr>
-          <w:p><w:r><w:t xml:space="preserve"> </w:t></w:r></w:p>
+          <w:tcPr>
+            <w:tcW w:w="9360" w:type="dxa"/>
+            <w:shd w:val="clear" w:color="auto" w:fill="${olive}"/>
+            <w:tcMar><w:top w:w="80" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/></w:tcMar>
+          </w:tcPr>
+          <w:p>${run(' ', { size: 12, color: olive, space: true })}</w:p>
         </w:tc>
       </w:tr>
     </w:tbl>
